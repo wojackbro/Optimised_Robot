@@ -21,6 +21,10 @@
 
 ## 1. General Project Description
 
+### Abstract
+This project presents the design and implementation of an autonomous differential-drive mobile robot simulated in CoppeliaSim. The robot is engineered to execute a sequence of complex navigation tasks, including precise line following, roundabout navigation via colour-coded markers, dynamic obstacle avoidance using proximity sensors, and an object pickup-and-return mission. A hybrid deliberative-reactive control architecture, governed by a Behaviour Tree, is employed to manage task arbitration and ensure robust real-time performance.
+
+### Project Description
 **Optimised Robot** is an autonomous mobile robot agent simulated in CoppeliaSim (formerly V-REP). The robot operates on a predefined closed-loop track and must complete a series of increasingly complex tasks without human intervention. The control architecture is built around a **Behaviour Tree (BT)** that governs high-level decision making, dispatching commands to low-level motor and sensor routines.
 
 The robot demonstrates five integrated capabilities:
@@ -44,6 +48,9 @@ The robot is a custom-assembled differential-drive mobile robot built within the
 
 ### 2.2 Body Shape
 The robot has a compact rectangular chassis. Two motorised wheels are mounted symmetrically on the lateral axis; the chassis sits low to the ground to keep all five downward-facing vision sensors within effective focal range of the track surface.
+
+*(Please refer to the robot body shape picture below)*
+![Robot Body Shape](docs/images/robot_body.png)
 
 ### 2.3 Sensor Set
 
@@ -340,6 +347,17 @@ t=4.20  color=BLUE (return) exit_reached=True  sim.stopSimulation()
 | Roundabout navigation | `docs/videos/roundabout.mp4` |
 | Pickup & delivery mission | `docs/videos/pickup_delivery.mp4` |
 
+### 7.5 Statistics with Graphs
+> Place generated statistic graphs `.png` files in `docs/graphs/` and link below.
+
+**Performance Metrics Analysed:**
+1. **Line Tracking Error:** Average deviation from the centre sensor over time.
+2. **Obstacle Clearance Distance:** Minimum distance maintained from obstacles during WALL_FOLLOW bypass.
+3. **Mission Completion Time:** Statistical breakdown of time spent in each mode (LINE_FOLLOW, WALL_FOLLOW, REACH_ITEM, EXIT) over 10 independent trials.
+
+![Mission Time Statistics](docs/graphs/mission_times.png)
+![Line Tracking Error](docs/graphs/tracking_error.png)
+
 ---
 
 ## 8. UML Diagrams
@@ -526,9 +544,11 @@ A lightweight Python dashboard (e.g. built with `PyQt5` or `Dash`) subscribes to
 - **BT status panel** — live tree dump (mirrors the `py_trees.display.unicode_tree` console output)
 - **Mission progress indicator** — tracks `finish_line`, `item_picked`, `exit_reached` flags
 
-### 9.5 Shared Repository
+### 9.5 Shared Repository & Delivery
 
-Repository: [https://github.com/wojackbro/Optimised_Robot](https://github.com/wojackbro/Optimised_Robot)
+- **Shared Repository:** The project source code is maintained on GitHub: [https://github.com/wojackbro/Optimised_Robot](https://github.com/wojackbro/Optimised_Robot).
+- **MS Teams Delivery:** A complete copy of all files (including code, `docker-compose`, videos, and graphs) is uploaded to the designated private MS Teams group channel under the "Code" folder.
+- **Instruction File:** This very `README.md` serves as the Markdown instruction file detailing how to install, test, and evaluate the project.
 
 ```
 Optimised_Robot/
