@@ -1,0 +1,13 @@
+Verify the purposes of vision sensors. Middle sensor checks RGB. Verify whether all sensors check RGB patch color and verify all purposes of all sensors.
+
+
+check the binary threshold parameters
+
+Unit test — line lost: when the line is lost, the robot keeps rotating 360°. Test passed.
+
+Unit test — all sensors white: the robot rotates forever. Test passed.
+
+Unit test — proximity < 0.2 m: robot enters WALL_FOLLOW mode and avoids the obstacle. Test passed.
+
+Fix the diagrams
+UML, State diagrams etc
