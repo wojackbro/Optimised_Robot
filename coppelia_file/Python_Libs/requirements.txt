@@ -1,0 +1,4 @@
+py_trees
+SpeechRecognition
+coppeliasim-zmqremoteapi-client
+pyaudio
