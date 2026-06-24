@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimised Robot — Test Case</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/theme/black.css">
+<style>
+  :root{
+    --accent:#4fc3f7;
+    --accent2:#ffd54f;
+    --green:#66bb6a;
+    --red:#ef5350;
+  }
+  .reveal h1,.reveal h2,.reveal h3{color:var(--accent);text-transform:none;letter-spacing:0;}
+  .reveal section{font-size:30px;}
+  .reveal .tc-num{
+    display:inline-block;background:var(--accent);color:#0b1929;
+    font-weight:800;border-radius:10px;padding:.05em .5em;margin-right:.4em;
+  }
+  .reveal .tag{
+    display:inline-block;font-size:.6em;font-weight:700;border-radius:999px;
+    padding:.18em .8em;margin:.15em .2em;border:1px solid var(--accent);color:var(--accent);
+  }
+  .reveal .tag.mode{border-color:var(--accent2);color:var(--accent2);}
+  .reveal .tag.green{border-color:var(--green);color:var(--green);}
+  .reveal .tag.red{border-color:var(--red);color:var(--red);}
+  .reveal ul{width:100%;}
+  .reveal li{margin:.25em 0;line-height:1.3;}
+  .reveal .small{font-size:.62em;color:#9fb3c8;}
+  .reveal .goal{
+    background:rgba(79,195,247,.12);border-left:4px solid var(--accent);
+    padding:.5em .8em;border-radius:6px;font-size:.8em;margin-top:.4em;text-align:left;
+  }
+  .reveal code{color:var(--accent2);background:rgba(255,255,255,.06);padding:0 .3em;border-radius:4px;font-size:.85em;}
+  .reveal table{font-size:.62em;}
+  .reveal .lead{color:#cfd8dc;font-size:.85em;}
+  .reveal section h2{margin-bottom:.2em;}
+  .reveal .twocol{display:flex;gap:1.2em;text-align:left;}
+  .reveal .twocol>div{flex:1;}
+  .reveal .footer{position:fixed;bottom:8px;right:16px;font-size:14px;color:#5f7488;}
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- TITOLO -->
+<section data-background-gradient="linear-gradient(135deg,#0b1929,#10324d)">
+  <h1>Optimised Robot</h1>
+  <h3>Intelligent Line Follower — Test Protocol</h3>
+  <p class="lead">Intelligent Systems and Robotics Laboratory (ISRLAB) — A.Y. 2025/26</p>
+  <p class="small">CoppeliaSim Simulation · Hybrid deliberative-reactive architecture (Behaviour Tree)<br>
+  Supervisor: Prof. Giovanni De Gasperis</p>
+</section>
+
+<!-- ROBOT AT A GLANCE -->
+<section>
+  <h2>Robot at a glance</h2>
+  <div class="twocol">
+    <div>
+      <p class="small" style="color:var(--accent)">VISION SENSORS (×5, downward-facing, binary)</p>
+      <ul class="small">
+        <li><code>LeftSensor</code> — left deviation</li>
+        <li><code>MiddleSensor</code> — centre + RGB colour reading</li>
+        <li><code>RightSensor</code> — right deviation</li>
+        <li><code>InternalLeft/RightSensor</code> — fine drift correction</li>
+      </ul>
+      <p class="small" style="color:var(--accent)">PROXIMITY SENSORS (×3)</p>
+      <ul class="small"><li>Central / Left / Right — threshold <code>0.20 m</code></li></ul>
+    </div>
+    <div>
+      <p class="small" style="color:var(--accent)">ACTUATION</p>
+      <ul class="small">
+        <li>Differential-drive: 2 wheels, DOF = 2</li>
+        <li>Velocity control: <code>setJointTargetVelocity</code></li>
+        <li>Base speed (move/rotate): <code>π rad/s</code></li>
+      </ul>
+      <p class="small" style="color:var(--accent2)">MOTION MODES (MotionMode)</p>
+      <ul class="small">
+        <li><code>LINE_FOLLOW</code> · <code>WALL_FOLLOW</code></li>
+        <li><code>REACH_ITEM</code> · <code>EXIT</code></li>
+      </ul>
+    </div>
+  </div>
+  <p class="goal">Vision binary threshold: <code>0.5</code> on packet index [10]. Black line ≈ 0.0–0.3 → <b>True</b> (line); white floor ≈ 0.7–1.0 → <b>False</b>.</p>
+</section>
+
+<!-- ARCHITECTURE -->
+<section>
+  <h2>Three-layer architecture</h2>
+  <div class="twocol">
+    <div>
+      <ul class="small">
+        <li><b style="color:var(--accent)">Sensing</b> — <code>readsensor.py</code> in <code>sysCall_sensing</code>: reads all 5 sensors, applies threshold, broadcasts <code>sensor_reading</code> and <code>proximity</code>.</li>
+        <li><b style="color:var(--accent)">Reactive</b> — <code>actuatormotor.py</code> in <code>sysCall_actuation</code>: BT tick, dispatch to motion primitive, STOP handling.</li>
+        <li><b style="color:var(--accent)">Deliberative</b> — Behaviour Tree (<code>py_trees</code>) + shared Blackboard.</li>
+      </ul>
+    </div>
+    <div>
+      <p class="small" style="color:var(--accent2)">BLACKBOARD — key entries</p>
+      <ul class="small">
+        <li><code>motion_mode</code>, <code>vocal_cmd</code>, <code>current_behaviour</code></li>
+        <li><code>obstacle_detected[3]</code>, <code>obstacle_distance[3]</code></li>
+        <li><code>item_picked</code>, <code>item_reached</code>, <code>exit_reached</code></li>
+      </ul>
+      <p class="small">Decoupled message bus: <code>broadcastMsg()</code> / <code>sysCall_msg()</code>.</p>
+    </div>
+  </div>
+  <p class="goal">All 16 test cases verify sub-goals and transitions of this state machine.</p>
+</section>
+
+<!-- TC1 -->
+<section>
+  <h2><span class="tc-num">1</span>Sharp corners</h2>
+  <span class="tag mode">LINE_FOLLOW</span><span class="tag">5 vision sensors</span>
+  <ul>
+    <li>The robot follows the black line through <b>sharp-edge corners</b> (abrupt direction changes).</li>
+    <li>When the line leaves the centre zone, outer-sensor recovery kicks in with <b>outer rotation factor 1.5</b> (aggressive edge recovery).</li>
+    <li>Line lost left → rotate left; lost right → rotate right, until reacquired.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> the robot reacquires the line after the corner without leaving the track.</p>
+</section>
+
+<!-- TC2 -->
+<section>
+  <h2><span class="tc-num">2</span>Smooth curves</h2>
+  <span class="tag mode">LINE_FOLLOW</span><span class="tag">Internal sensors</span>
+  <ul>
+    <li>Gentle, continuous bends: steering is governed by the <b>internal sensors</b> (Internal Left/Right).</li>
+    <li>Fine anti-drift correction with factor <code>−1.1011</code>: slight wheel differential to stay centred.</li>
+    <li>No sharp rotations: motion remains forward (cruise <code>π rad/s</code>).</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> smooth tracking, minimal centring error throughout the curve.</p>
+</section>
+
+<!-- TC3 -->
+<section>
+  <h2><span class="tc-num">3</span>Tight sharp corners</h2>
+  <span class="tag mode">LINE_FOLLOW</span><span class="tag">Outer recovery</span>
+  <ul>
+    <li>Small-radius edges: the line leaves the inner sensor field quickly.</li>
+    <li><b>Outer sensors</b> engage a <b>rotate-in-place</b> manoeuvre (factor 1.5) to latch onto the tight corner.</li>
+    <li>Stress test for the balance between forward speed and rotation speed (<code>rad_rot = π</code>).</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> the robot completes the tight corner without permanently losing the line.</p>
+</section>
+
+<!-- TC4 -->
+<section>
+  <h2><span class="tc-num">4</span>Tight smooth curves</h2>
+  <span class="tag mode">LINE_FOLLOW</span><span class="tag">Internal + outer</span>
+  <ul>
+    <li>Smooth but small-radius bends: require continuous and increasing correction.</li>
+    <li>Starts with fine inner correction (<code>−1.1011</code>); if deviation grows, outer recovery (1.5) takes over.</li>
+    <li>Verifies the <b>gradual transition</b> between fine correction and aggressive recovery.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> continuous tracking of the tight curve without excessive oscillation.</p>
+</section>
+
+<!-- TC5 -->
+<section>
+  <h2><span class="tc-num">5</span>Intersections ignored</h2>
+  <span class="tag mode">LINE_FOLLOW</span><span class="tag">Robustness</span>
+  <ul>
+    <li>At <b>intersections</b> the robot does not deviate: it holds its current direction.</li>
+    <li>"Hold last direction" logic: when all sensors see line/ambiguity, the heading is maintained for ~50 ms.</li>
+    <li>Prevents an intersection from being misinterpreted as a curve.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> the robot crosses the intersection going straight on the main line.</p>
+</section>
+
+<!-- TC6 -->
+<section>
+  <h2><span class="tc-num">6</span>Obstacle avoidance</h2>
+  <span class="tag mode">WALL_FOLLOW</span><span class="tag">Proximity &lt; 0.20 m</span>
+  <ul>
+    <li>Cup-shaped obstacle detected: a proximity sensor drops below <code>0.20 m</code>.</li>
+    <li>Transition <code>LINE_FOLLOW → WALL_FOLLOW</code>: <b>bang-bang</b> wall-following bypass at speed <code>wf_base_speed = 3.5</code>.</li>
+    <li>Once past the obstacle (proximity clear), returns to the previous mode and reacquires the line.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> navigates around the obstacle maintaining clearance and re-enters <code>LINE_FOLLOW</code>.</p>
+</section>
+
+<!-- TC7 -->
+<section>
+  <h2><span class="tc-num">7</span>Roundabout → pick up → finish line</h2>
+  <span class="tag mode">REACH_ITEM</span><span class="tag green">green = left entry</span><span class="tag" style="border-color:var(--accent2);color:var(--accent2)">yellow = right entry</span>
+  <ul>
+    <li>Follows the line, enters roundabout: <b>green</b> marker (left) or <b>yellow</b> (right) → choreographed <b>4-step</b> steering sequence.</li>
+    <li>Picks up the object and carries it toward a finish line placed <b>outside</b> the roundabout.</li>
+    <li>Roundabout steer: base <code>π×2.0</code>, differential <code>π×1.4</code>, micro-steer 0.35 s, colour cooldown 1.0 s.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> 4 steering steps executed, object picked up, correct exit toward the finish line.</p>
+</section>
+
+<!-- TC8 -->
+<section>
+  <h2><span class="tc-num">8</span>Finish line → roundabout → pick up → return</h2>
+  <span class="tag mode">REACH_ITEM → EXIT</span>
+  <ul>
+    <li>Crosses the <b>finish line</b> (marker) first, then executes the roundabout.</li>
+    <li>On exit, picks up the object, performs a <b>180° U-turn</b> (<code>14.0 rad/s</code>, ~0.224 s), re-enters the roundabout.</li>
+    <li>State sequence: marker detected → <code>REACH_ITEM</code> → red marker → <code>EXIT</code> → return to finish line.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> full cycle with U-turn and return to the finish line point.</p>
+</section>
+
+<!-- TC9 -->
+<section>
+  <h2><span class="tc-num">9</span>Pick up inside roundabout → return</h2>
+  <span class="tag mode">REACH_ITEM → EXIT</span>
+  <ul>
+    <li>Follows the line, crosses the finish line; <b>picks up the object while navigating inside the roundabout</b>.</li>
+    <li>Completes the roundabout; a few seconds after exiting performs the U-turn, re-enters and returns to the finish line.</li>
+    <li>Flags involved: <code>item_picked</code> (picked) → <code>item_reached</code> (red) → <code>exit_reached</code>.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> pickup executed during the roundabout and correct return to the finish line.</p>
+</section>
+
+<!-- TC10 -->
+<section>
+  <h2><span class="tc-num">10</span>Return only if finish line reached</h2>
+  <span class="tag mode">REACH_ITEM</span><span class="tag">no red marker</span>
+  <ul>
+    <li>Does the roundabout and picks up the object inside, but <b>keeps wandering</b> on the line.</li>
+    <li>Demonstrates the <b>precondition</b>: the return U-turn happens <u>only</u> after reaching the finish line (red marker).</li>
+    <li>Doc case "Pickup active, no red marker": completes the full lap without U-turn.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> no U-turn until the finish line has been reached.</p>
+</section>
+
+<!-- TC11 -->
+<section>
+  <h2><span class="tc-num">11</span>Lost line search + timeout</h2>
+  <span class="tag mode">LINE_FOLLOW</span><span class="tag">All sensors white</span>
+  <ul>
+    <li>All 5 sensors white (no line): holds the last direction for ~50 ms, then <b>rotates to search</b> for the line.</li>
+    <li>"Random" search (rotation) until the track is reacquired.</li>
+    <li>If nothing is found within the timeout → <b>stops</b> (safety state).</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> line reacquired, or controlled stop after timeout.</p>
+</section>
+
+<!-- TC12 -->
+<section>
+  <h2><span class="tc-num">12</span>Voice command: fixed-side avoidance</h2>
+  <span class="tag mode">WALL_FOLLOW</span><span class="tag">switch_lf / switch_ms-like</span>
+  <ul>
+    <li>Voice command that forces the robot to bypass <b>all obstacles to the right</b> or <b>all to the left</b>.</li>
+    <li>The command updates the <b>blackboard</b> (<code>vocal_cmd</code>) → the bang-bang always chooses the same side.</li>
+    <li>Communication via message bus / topic <code>robot/commands/*</code>.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> every obstacle is bypassed on the side dictated by the voice command.</p>
+</section>
+
+<!-- TC13 -->
+<section>
+  <h2><span class="tc-num">13</span>Voice command: stop / start</h2>
+  <span class="tag">stop_signal</span><span class="tag">resume_signal</span>
+  <ul>
+    <li>"<b>stop</b>" command: <code>current_behaviour = STOP</code> → motors halt <b>immediately</b> in the dispatcher.</li>
+    <li>"<b>start</b>" command: restores the previous <i>motion mode</i> and resumes.</li>
+    <li>Topics: <code>robot/commands/stop</code> and <code>robot/commands/resume</code>.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> immediate halt on "stop", coherent resume on "start".</p>
+</section>
+
+<!-- TC14 -->
+<section>
+  <h2><span class="tc-num">14</span>Following_Mode (ignores mission)</h2>
+  <span class="tag mode">pure LINE_FOLLOW</span>
+  <ul>
+    <li>In <b>Following</b> mode the robot <u>ignores</u> the finish line and the object: pure line following only.</li>
+    <li>Blue/red markers do not trigger <code>REACH_ITEM</code> or <code>EXIT</code>.</li>
+    <li>Matches the doc case "Full lap, no markers": completes the closed loop.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> full lap of the track without activating any mission logic.</p>
+</section>
+
+<!-- TC15 -->
+<section>
+  <h2><span class="tc-num">15</span>Mission_Mode (executes mission)</h2>
+  <span class="tag mode">REACH_ITEM / EXIT active</span>
+  <ul>
+    <li>In <b>Mission</b> mode the robot reacts to the finish line and the object.</li>
+    <li>Blue marker → <code>finish_line=True</code>, <code>REACH_ITEM</code>; red marker → <code>EXIT</code> + 180° U-turn; back to blue → <code>stopSimulation()</code>.</li>
+    <li>Executes the full pickup &amp; delivery chain.</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> complete mission: pickup, delivery, U-turn and clean stop.</p>
+</section>
+
+<!-- TC16 -->
+<section>
+  <h2><span class="tc-num">16</span>Voice switch Follow ↔ Mission</h2>
+  <span class="tag">switch_lf_signal</span><span class="tag">switch_ms_signal</span>
+  <ul>
+    <li>Voice command that switches from <b>Follow_Line</b> to <b>Mission_Mode</b> and back.</li>
+    <li>Topics: <code>robot/commands/switch_lf</code> and <code>robot/commands/switch_ms</code> → updates <code>motion_mode</code> on the blackboard.</li>
+    <li>Verifies that the <b>behaviour actually changes</b> between the two modes (TC14 vs TC15).</li>
+  </ul>
+  <p class="goal"><b>Pass:</b> after the switch the robot correctly transitions from "ignore mission" to "execute mission".</p>
+</section>
+
+<!-- SUMMARY -->
+<section>
+  <h2>Test coverage summary</h2>
+  <table>
+    <tr><th>Capability</th><th>Test cases</th></tr>
+    <tr><td>Line following (curves / intersections / search)</td><td>1, 2, 3, 4, 5, 11</td></tr>
+    <tr><td>Obstacle avoidance</td><td>6, 12</td></tr>
+    <tr><td>Roundabout navigation</td><td>7, 8, 9, 10</td></tr>
+    <tr><td>Object pickup &amp; delivery</td><td>7, 8, 9, 10, 15</td></tr>
+    <tr><td>Vocal command response</td><td>12, 13, 16</td></tr>
+    <tr><td>Mode arbitration (Follow vs Mission)</td><td>14, 15, 16</td></tr>
+  </table>
+  <p class="goal">Each test verifies a transition of the state machine <code>LINE_FOLLOW → WALL_FOLLOW / REACH_ITEM / EXIT</code>, governed by the Behaviour Tree.</p>
+</section>
+
+</div></div>
+<div class="footer">Optimised Robot · ISRLAB 2025/26</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({hash:true, slideNumber:'c/t', transition:'slide'});
+</script>
+</body>
+</html>
