@@ -40,7 +40,7 @@ pip install py_trees paho-mqtt
 1. Open CoppeliaSim and load the scene file (`.ttt`).
 2. Attach `scripts/readsensor.py` to the **SensorHub** object (`sysCall_sensing` mode).
 3. Attach `scripts/actuatormotor.py` to the **Robot** object (`sysCall_actuation` mode).
-4. Attach the Lua vision callback script to each of the five vision sensor objects.
+4. Attach the vision callback script to each of the five vision sensor objects.
 5. Press **Play** to start the simulation.
 
 ---
@@ -91,33 +91,3 @@ pip install py_trees paho-mqtt
 5. **Vocal stop** — stop mid-run, then resume.
 
 ---
-
-## Docker (optional, distributed mode)
-
-```bash
-cd docker
-docker-compose up --build
-```
-
-Starts CoppeliaSim (headless), MQTT broker, and GUI dashboard in separate containers.
-
----
-
-## Regenerate design documents
-
-Requires [pandoc](https://pandoc.org/) and Google Chrome (macOS default path). Builds Word first, then PDF:
-
-```bash
-./docs/build_design_pdf.sh
-```
-
-Output:
-
-- `docs/ISRLAB_Design_Documentation.docx`
-- `docs/ISRLAB_Design_Documentation.pdf`
-
-Add figures before building:
-
-- `docs/images/robot_body.png`
-- `docs/graphs/mission_times.png`, `tracking_error.png`
-- `docs/videos/*.mp4` (for MS Teams / presentation; not embedded in PDF)
